@@ -1,0 +1,10 @@
+
+alias gitc="bash ~/git-scripts/commit.sh"
+alias gitp="bash ~/git-scripts/push.sh"
+alias gitpl="bash ~/git-scripts/pull.sh"
+alias gitf="bash ~/git-scripts/fetch.sh"
+alias gitck="bash ~/git-scripts/checkout.sh"
+alias gitckb="bash ~/git-scripts/new_branch.sh"
+alias gitm="bash ~/git-scripts/merge.sh"
+alias gitrv="bash ~/git-scripts/review.sh"
+alias gitrst="bash ~/git-scripts/reset.sh"
