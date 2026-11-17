@@ -19,7 +19,7 @@ if echo "$INPUT" | grep -q ' '; then
     "$CLAUDE" -p "Convert this description into a git branch name.
 Use the format type/short-description (e.g. feat/add-oauth-login, fix/null-pointer-cart, chore/update-deps).
 If there is a ticket id in the input, preserve it in the branch name.
-Use lowercase, hyphens only, max 60 chars. Output only the branch name." 2>/dev/null || true)
+Use lowercase, hyphens only, max 60 chars. Output only the branch name." --dangerously-skip-permissions 2>/dev/null || true)
   if [ -z "$BRANCH_NAME" ]; then
     BRANCH_NAME=$(echo "$INPUT" | tr ' ' '-' | tr '[:upper:]' '[:lower:]')
   fi
@@ -47,5 +47,3 @@ if [ -x "$WORKVAULT_LOG" ]; then
     --commit "" \
     --highlight "Started workstream: $BRANCH_NAME" || true
 fi
-
-npx gitnexus analyze --embeddings

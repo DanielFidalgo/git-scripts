@@ -9,7 +9,7 @@ git merge $BRANCH_TO_MERGE --no-edit
 
 if [ $? -ne 0 ]; then
     echo "Merge conflicts detected. Asking Claude to resolve..."
-    $CLAUDE -p "Resolve all git merge conflicts in the current repository. Look at all conflicted files, resolve the conflicts by keeping the most sensible combination of changes, then stage all resolved files with git add."
+    $CLAUDE -p "Resolve all git merge conflicts in the current repository. Look at all conflicted files, resolve the conflicts by keeping the most sensible combination of changes, then stage all resolved files with git add." --dangerously-skip-permissions
     git merge --continue --no-edit
 fi
 

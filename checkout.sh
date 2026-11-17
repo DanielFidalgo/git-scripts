@@ -17,5 +17,3 @@ else
     # Checkout the branch provided as an argument
     git checkout "$1"
 fi
-
-npx gitnexus analyze --embeddings

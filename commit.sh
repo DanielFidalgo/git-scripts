@@ -46,7 +46,8 @@ printf '%s\n' "$DIFF" >> "$PROMPT_INPUT"
 
 if [ -n "$SIGNAL_KIND" ]; then
   echo "Generating commit message with explicit signal: $SIGNAL_KIND"
-  CLAUDE_OUTPUT=$("$CLAUDE" -p "
+  TMP_ERR=$(mktemp)
+  CLAUDE_OUTPUT=$(cat "$PROMPT_INPUT" | "$CLAUDE" -p "
 You are generating a git commit message from branch context, an optional hint, and a staged diff.
 
 Return ONLY valid JSON with this exact shape:
@@ -65,13 +66,13 @@ Rules:
 - note_title should be a short reusable title derived from the hint/diff.
 - No markdown, no explanation, JSON only.
 - Keep commit_message under 90 characters.
-
-Input:
-$(cat "$PROMPT_INPUT")
-" < /dev/null 2>/dev/null || true)
+" --dangerously-skip-permissions 2>"$TMP_ERR" || true)
+  [ -z "${CLAUDE_OUTPUT:-}" ] && [ -s "$TMP_ERR" ] && echo "Claude error: $(cat "$TMP_ERR")" >&2
+  rm -f "$TMP_ERR"
 else
   echo "Generating commit message and auto-detecting signal..."
-  CLAUDE_OUTPUT=$("$CLAUDE" -p "
+  TMP_ERR=$(mktemp)
+  CLAUDE_OUTPUT=$(cat "$PROMPT_INPUT" | "$CLAUDE" -p "
 You are generating a git commit message and classifying whether the change should create a durable work-memory note.
 
 Return ONLY valid JSON with this exact shape:
@@ -99,10 +100,9 @@ Be conservative:
 - note_title should be short and useful as a note title.
 - No markdown, no explanation, JSON only.
 - Keep commit_message under 90 characters.
-
-Input:
-$(cat "$PROMPT_INPUT")
-" < /dev/null 2>/dev/null || true)
+" --dangerously-skip-permissions 2>"$TMP_ERR" || true)
+  [ -z "${CLAUDE_OUTPUT:-}" ] && [ -s "$TMP_ERR" ] && echo "Claude error: $(cat "$TMP_ERR")" >&2
+  rm -f "$TMP_ERR"
 fi
 
 rm -f "$PROMPT_INPUT"
@@ -115,12 +115,18 @@ fi
 
 JSON_VALUE() {
   python3 - "$TMP_JSON" "$1" <<'PY'
-import json, sys
+import json, sys, re
 path = sys.argv[1]
 key = sys.argv[2]
 try:
     with open(path, 'r', encoding='utf-8') as f:
-        data = json.load(f)
+        content = f.read().strip()
+    content = re.sub(r'^```(?:json)?\s*\n?', '', content)
+    content = re.sub(r'\n?```\s*$', '', content)
+    m = re.search(r'\{[\s\S]*\}', content)
+    if m:
+        content = m.group(0)
+    data = json.loads(content)
     val = data.get(key, "")
     if isinstance(val, (dict, list)):
         print("")
@@ -264,5 +270,3 @@ Architecture note captured from commit alias." || true
     esac
   fi
 fi
-
-npx gitnexus analyze --embeddings

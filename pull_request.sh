@@ -38,8 +38,8 @@ CHANGED_FILES=$(git diff --name-only "origin/$BASE_BRANCH..HEAD" 2>/dev/null || 
 echo "Generating PR title..."
 TITLE=$(printf "Branch: %s\nBase: %s\nCommits:\n%s\n\nChanged files:\n%s" \
   "$BRANCH" "$BASE_BRANCH" "$COMMITS" "$DIFF_STAT" | \
-  "$CLAUDE" --model haiku -p "Generate a concise, descriptive pull request title (max 72 chars).
-Be specific about what changed. No quotes, no markdown, just the plain title text." 2>/dev/null || true)
+  "$CLAUDE" -p "Generate a concise, descriptive pull request title (max 72 chars).
+Be specific about what changed. No quotes, no markdown, just the plain title text." --dangerously-skip-permissions 2>/dev/null || true)
 
 if [ -z "$TITLE" ]; then
   TITLE="$BRANCH"
@@ -58,7 +58,7 @@ Specific list of changes made.
 ## Testing
 What reviewers should test or verify.
 
-Be technical and specific. No filler." 2>/dev/null || true)
+Be technical and specific. No filler." --dangerously-skip-permissions 2>/dev/null || true)
 
 if [ -z "$BODY" ]; then
   BODY="$COMMITS"
@@ -121,7 +121,7 @@ $CHANGED_FILES
 
 Diff stat:
 $DIFF_STAT
-" < /dev/null 2>/dev/null || true)
+" --dangerously-skip-permissions < /dev/null 2>/dev/null || true)
 
   if [ -z "${SIGNAL_JSON:-}" ]; then
     echo '{"signal":"none","confidence":0.0,"note_title":"PR update"}' > "$TMP_JSON"

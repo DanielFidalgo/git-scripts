@@ -55,6 +55,7 @@ trap cleanup EXIT
 
 if [ -n "$SIGNAL_KIND" ]; then
   echo "Generating squash message with explicit signal: $SIGNAL_KIND"
+  TMP_ERR=$(mktemp)
   CLAUDE_OUTPUT=$("$CLAUDE" -p "
 You are generating a single squash commit message from a branch history.
 
@@ -88,9 +89,12 @@ $CHANGED_FILES
 
 Diff stat:
 $DIFF_STAT
-" < /dev/null 2>/dev/null || true)
+" --dangerously-skip-permissions < /dev/null 2>"$TMP_ERR" || true)
+  [ -z "${CLAUDE_OUTPUT:-}" ] && [ -s "$TMP_ERR" ] && echo "Claude error: $(cat "$TMP_ERR")" >&2
+  rm -f "$TMP_ERR"
 else
   echo "Generating squash message and auto-detecting signal..."
+  TMP_ERR=$(mktemp)
   CLAUDE_OUTPUT=$("$CLAUDE" -p "
 You are generating a single squash commit message and classifying whether this squashed change should create a durable work-memory note.
 
@@ -133,7 +137,9 @@ $CHANGED_FILES
 
 Diff stat:
 $DIFF_STAT
-" < /dev/null 2>/dev/null || true)
+" --dangerously-skip-permissions < /dev/null 2>"$TMP_ERR" || true)
+  [ -z "${CLAUDE_OUTPUT:-}" ] && [ -s "$TMP_ERR" ] && echo "Claude error: $(cat "$TMP_ERR")" >&2
+  rm -f "$TMP_ERR"
 fi
 
 if [ -z "${CLAUDE_OUTPUT:-}" ]; then
@@ -144,12 +150,18 @@ fi
 
 JSON_VALUE() {
   python3 - "$TMP_JSON" "$1" <<'PY'
-import json, sys
+import json, sys, re
 path = sys.argv[1]
 key = sys.argv[2]
 try:
     with open(path, 'r', encoding='utf-8') as f:
-        data = json.load(f)
+        content = f.read().strip()
+    content = re.sub(r'^```(?:json)?\s*\n?', '', content)
+    content = re.sub(r'\n?```\s*$', '', content)
+    m = re.search(r'\{[\s\S]*\}', content)
+    if m:
+        content = m.group(0)
+    data = json.loads(content)
     val = data.get(key, "")
     if isinstance(val, (dict, list)):
         print("")
@@ -300,5 +312,3 @@ $MSG" || true
     esac
   fi
 fi
-
-npx gitnexus analyze --embeddings

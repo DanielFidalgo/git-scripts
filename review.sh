@@ -30,13 +30,13 @@ echo ""
 echo "=== Claude Review Summary ==="
 SUMMARY=$(printf "Branch being merged: %s\nInto: %s\n\nCommits:\n%s\n\nFiles changed:\n%s\n\nDiff:\n%s" \
   "$SOURCE_BRANCH" "$TARGET_BRANCH" "$COMMITS" "$DIFF_STAT" "$DIFF" | \
-  "$CLAUDE" --model opus -p "You are reviewing a pull request merge. Provide a concise review summary with:
+  "$CLAUDE" -p "You are reviewing a pull request merge. Provide a concise review summary with:
 - What this does: one or two sentences
 - Key changes: bullet points summarizing main changes and their purpose
 - Watch out for: risks or areas worth extra attention
 - Suggested improvements: specific improvements
 
-Be specific and technical. No filler." 2>/dev/null || true)
+Be specific and technical. No filler." --dangerously-skip-permissions 2>/dev/null || true)
 
 echo "${SUMMARY:-"(Claude unavailable)"}"
 echo "============================="
